@@ -78,3 +78,12 @@
 
 /* 标题仅展示文字，不拦截同一顶栏中操作按键的点击。 */
 .page-heading{pointer-events:none}
+
+/* 设置类界面统一品牌区与标题位置，为右侧圆形按键保留区域。 */
+#device[data-page="mode"] .page-heading,
+#device[data-page="parameters"] .page-heading,
+#device[data-page="alarmSettings"] .page-heading,
+#device[data-page="patient"] .page-heading,
+#device[data-page="trend"] .page-heading,
+#device[data-page="time"] .page-heading{top:87px;height:40px;right:376px}
+#device[data-page="time"] .page-heading .hint{left:auto;right:0;top:12px}
