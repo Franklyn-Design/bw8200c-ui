@@ -8,11 +8,25 @@
 - [调试参数二级界面](新版UI/index.html?screen=debugDetail)
 - [可编辑 Figma 设计稿](https://www.figma.com/design/2mgAGS0RgqawBxkw36RPHs)
 
-## 部署
+## Cloudflare Pages 部署
 
-这是无需构建的静态网页。GitHub Pages 设置为 Deploy from a branch，选择 main 分支和 /(root) 目录。
+连接 GitHub 仓库 `Franklyn-Design/bw8200c-ui`，使用以下设置：
 
-页面使用相对路径，可部署到仓库子路径。`.nojekyll` 保留原文件结构。网站首页进入设计总览，可切换全部界面、报警状态和旧版对照。
+| 设置 | 值 |
+| --- | --- |
+| 项目名称 | `bw8200c-ui` |
+| 生产分支 | `main` |
+| 框架预设 | `None` |
+| 构建命令 | `exit 0` |
+| 构建输出目录 | `.` |
+| 根目录（高级） | 留空，使用仓库根目录 |
+| 环境变量 | 无需添加 |
+
+保存并部署后，使用 Cloudflare 实际分配的 `*.pages.dev` 默认域名。连接仓库后，后续推送到 main 会自动发布。
+
+这是无需构建的静态网页，根目录已有 index.html。所有界面、操作照片和旧版对照图都在仓库内，不依赖 GitHub 的运行时资源请求。
+
+[Cloudflare 静态 HTML 部署文档](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)
 
 ## 本地预览
 
@@ -28,3 +42,4 @@
 - `旧版参考/`：设计总览中的旧版对照图。
 
 设计源文件、验收记录与完整交付包保留在本地项目中。
+
