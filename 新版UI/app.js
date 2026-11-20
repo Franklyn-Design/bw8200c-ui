@@ -31,13 +31,32 @@ const key=(label,action,x,y,w,h,cls='',extra='')=>`<button class="pos key ${cls}
 const fieldValue=(v)=>v===null||v===undefined?'— —':esc(v);
 const initialParams=D.parameters.map(x=>x.value),initialAlarms=D.alarmsSettings.map(x=>x.value);
 const S={page:'main',autoReady:false,stage:'待机',paused:false,mode:0,draftMode:0,cup:225,draftCup:225,parameterIndex:0,alarmIndex:0,parameters:[...initialParams],alarmSettings:[...initialAlarms],patient:['','','','',''],focusField:0,time:[2026,11,18,10,30,0],timeIndex:0,selfProgress:0,selfResult:'',modal:null,alarmQueue:[],alarmActive:null,acknowledged:[],events:[],trendPage:0,debugSelection:0,debugValue:null,toast:'',lastPage:'main',mediaStatus:'未载入',volume:50,measurements:{feed:null,wash:null,empty:null,waste:null,speed:null},noticeIndex:0};
+const modalAlarms=new URLSearchParams(location.search).get('alarmStyle')==='modal';
+let dropdown=null;
 let selfTimer=null,toastTimer=null,videoElement=null;
 const titles={mode:['模式选择','MODE SELECTION'],parameters:['参数设置','PARAMETERS'],alarmSettings:['报警设置','ALARM SETTINGS'],patient:['患者信息','PATIENT INFORMATION'],trend:['趋势查看','EVENT RECORDS'],time:['时间设置','DATE & TIME'],help1:['耗材安装','INSTALLATION · 01'],help2:['耗材安装','INSTALLATION · 02'],help3:['简明操作流程','OPERATION GUIDE'],help4:['常见故障排除','TROUBLESHOOTING']};
 const brand=(extra='')=>['mode','parameters','alarmSettings','patient','trend','time'].includes(S.page)?`<div class="brand${extra?' '+extra:''}"><img class="brand-logo" src="assets/brand-logo.png" alt="万东康源 WANDONG KANGYUAN"></div>`:'';
-function header(home=false,debug=false){return `<header class="topbar">${home?key(icon('bell'),'alarm-open',14,10,39,38,'help-key','aria-label="查看报警"'):brand()}</header>${debug?'':key(icon(S.paused?'play':'pause')+`<span>${S.paused?'继续':'暂停'}</span>`,'pause',585,15,52,52,'top-action',`aria-label="${S.paused?'继续':'暂停'}"`)+key(icon('stop')+'<span>停止</span>','stop',669,15,52,52,'top-action danger','aria-label="停止"')+key(icon('help'),'help',750,21,28,26,'help-key','aria-label="帮助"')}`;}
+function header(home=false,debug=false){return `<header class="topbar">${home?key(icon('bell'),'alarm-open',14,10,39,38,'help-key','aria-label="查看报警"'):brand()}</header>${debug?'':key(icon(S.paused?'play':'pause')+`<span>${S.paused?'继续':'暂停'}</span>`,'pause',585,15,52,52,'top-action '+(S.paused?'resume-key':'pause-key'),`aria-label="${S.paused?'继续':'暂停'}"`)+key(icon('stop')+'<span>停止</span>','stop',669,15,52,52,'top-action danger','aria-label="停止"')+key(icon('help'),'help',750,21,28,26,'help-key','aria-label="帮助"')}`;}
 function heading(id){let t=titles[id];return `<div class="page-heading"><h1>${t[0]}</h1><span class="en">${t[1]}</span>${id==='time'?`<span class="hint">${S.time.slice(0,3).map((v,i)=>i?String(v).padStart(2,'0'):v).join('-')} ${String(S.time[3]).padStart(2,'0')}:${String(S.time[4]).padStart(2,'0')}</span>`:''}</div>`;}
 function nav(main=false){let list=main?[['进血','drop','stage:进血','feed'],['清洗','drop','stage:清洗','wash'],['清空','empty','stage:清空','empty'],['浓缩','concentrate','stage:浓缩'],['回血','return','stage:回血'],['打印','print','print'],['菜单','menu','go:mode']]:[['模式选择','grid','go:mode'],['参数设置','tools','go:parameters'],['报警设置','bell','go:alarmSettings'],['患者信息','patient','go:patient'],['趋势查看','chart','go:trend'],['时间设置','clock','go:time'],['主界面','home','go:main']];if(main&&S.autoReady)list=[['启动','play','auto-start'],['','',''],['','',''],['','',''],['','',''],['打印','print','print'],['菜单','menu','go:mode']];return `<nav class="nav" aria-label="${main?'操作':'设置'}导航">${list.map(([label,i,act,c])=>{if(!label)return '<div></div>';let selected=main?S.stage===label:act===`go:${S.page}`;return `<button class="key ${selected?'selected':''} ${c?'stage-'+c:''}" data-action="${act}">${selected?'<i class="active-mark"></i>':''}${icon(i)}<span>${label}</span></button>`}).join('')}</nav>`;}
-function main(){const active=S.stage,hasFlow=['进血','清洗','清空'].includes(active);return `${header(true)}<div class="pos pill cup-pill" style="${pos(22,59,196,35)}"><strong>${icon('cup')} ${S.cup}</strong></div>${key(icon('refresh')+' 更换','cup',117,59,101,35,'strip-key')}<div class="pos pill mode-pill" style="${pos(299,59,176,35)}"><strong>${icon(D.modes[S.mode].icon)} ${D.modes[S.mode].name}</strong></div>${key(icon('swap')+' 切换','go:mode',389,59,86,35,'strip-key')}<section class="pos panel status-panel" style="${pos(20,113,146,100)}"><div class="eyebrow">运行状态</div><div class="status-name">${S.paused?'暂停中':active}</div><div class="status-sub"><i class="status-dot" style="${S.paused?'background:#cea252':''}"></i>${S.paused?'按继续取消暂停':active==='待机'?'等待操作':active==='停止'?'操作已停止':'运行中'}</div></section><section class="pos panel side-detail" style="${pos(20,234,146,244)}"><h3>本次运行</h3><dl><dt>当前模式</dt><dd>${D.modes[S.mode].name}模式</dd><dt>离心杯型号</dt><dd>${S.cup}<span class="unit">mL</span></dd><dt>处理杯数</dt><dd>— —</dd></dl><div class="side-note">${S.alarmQueue.length?`${S.alarmQueue.length} 条报警待处理`:S.paused?'运行已暂停':hasFlow?`${active}进行中`:'等待设备状态同步'}</div></section><section class="pos panel flow-panel ${S.paused?'paused':''}" style="${pos(186,101,602,405)}" aria-label="管路运行示意"><svg class="flow-lines" viewBox="0 0 956 484" aria-hidden="true"></svg>${[['进血量','feed','#e0b552',18],['清洗量','wash','#55af94',216],['清空量','empty','#dc7785',414]].map(([name,v,c,x])=>`<div class="pos metric" style="${pos(x,35,180,80)}"><div class="vessel" style="--liquid:${c}"></div><div><h3>${name}<span class="unit">mL</span></h3><span class="reading">${fieldValue(S.measurements[v])}</span></div></div>`).join('')}<div class="pump-reading"><h3>蠕动泵速 <span class="unit">mL/min</span></h3><strong>${fieldValue(S.measurements.speed)}</strong></div>${key(icon('up'),'speed-adjust:1',207,282,26,26,'arrow speed-key','aria-label="增加蠕动泵速"')}${key(icon('down'),'speed-adjust:-1',207,320,26,26,'arrow speed-key','aria-label="减少蠕动泵速"')}<div class="bowl ${['浓缩','回血','预充'].includes(active)?'bowl-active':''}"><svg viewBox="0 0 195 195" aria-label="离心杯示意"><defs><linearGradient id="glass" x1="0" x2="1"><stop stop-color="#e4eff3"/><stop offset=".45" stop-color="#fff"/><stop offset="1" stop-color="#dce8ed"/></linearGradient><linearGradient id="blood" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0a8ae"/><stop offset="1" stop-color="#ce7786"/></linearGradient></defs><ellipse cx="98" cy="183" rx="81" ry="7" fill="#dce6ea" opacity=".7"/><path d="M89 8h18v25H89Z" fill="#476273"/><path d="M72 31h51v17H72Z" fill="#294956"/><rect x="67" y="43" width="61" height="16" rx="7" fill="#8fa9b7"/><path d="M73 57q-3 17-25 27L25 166q-3 13 10 13h125q13 0 10-13l-23-82q-22-10-25-27Z" fill="url(#glass)" stroke="#acbfca" stroke-width="2"/><path d="M51 101q47 52 92 0l19 62q2 7-7 7H40q-9 0-7-7Z" fill="url(#blood)" opacity=".8"/><path d="m52 91-18 68M61 83l8-7" stroke="white" stroke-width="6" stroke-linecap="round"/><path d="M142 119h10M145 133h10M149 147h10" stroke="#8eabb9" stroke-width="1"/></svg>${['浓缩','回血','预充'].includes(active)?'<svg class="cup-activity" width="195" height="195" viewBox="0 0 195 195" aria-hidden="true"><ellipse class="cup-cycle" cx="98" cy="137" rx="46" ry="18" fill="none" stroke="#d88796" stroke-width="2"/></svg>':''}</div><div class="pos metric waste-reading" style="left:620px;top:405px"><div class="vessel" style="--liquid:#688da7;width:43px;height:69px"></div><div><h3 style="font-size:17px">废液量 <span class="unit">mL</span></h3><span class="reading" style="font-size:29px">${fieldValue(S.measurements.waste)}</span></div></div><div class="flow-status"><i></i>${S.paused?'管路运行已暂停':hasFlow?`${active}进行中`:'管路就绪状态等待设备读取'}</div></section>${nav(true)}`;}
+function topSelector(kind){
+ const isCup=kind==='cup',label=isCup?'离心杯规格':'运行模式',open=dropdown===kind;
+ const current=isCup?S.cup:S.mode,draft=isCup?S.draftCup:S.draftMode;
+ const items=isCup?[125,225]:D.modes.map((_,i)=>i);
+ const name=v=>isCup?v+' mL':D.modes[v].name;
+ const action=isCup?'cup':'mode-dropdown',pick=isCup?'cup-select':'mode';
+ const trigger=`<button class="key selector-trigger" data-action="${action}" aria-label="${label}，${name(current)}" aria-expanded="${open}" ${open?'aria-controls="selector-options"':''}>${icon(isCup?'cup':D.modes[current].icon)}<span>${name(current)}</span><svg class="selector-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m2 5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`;
+ if(!open)return `<div class="top-selector">${trigger}</div>`;
+ const choices=items.map(v=>`<button class="option" data-action="${pick}:${v}" aria-pressed="${draft===v}"><span>${name(v)}</span>${v===draft?icon('check'):''}</button>`).join('');
+ return `<div class="top-selector">${trigger}<section class="option-list" id="selector-options" aria-label="${label}"><h3>${label}</h3>${choices}${isCup?'':`<p>${D.modes[draft].description}</p>`}<div class="option-actions"><button data-action="dropdown-close">取消</button><button data-action="${isCup?'cup-apply':'mode-apply'}">确认</button></div></section></div>`;
+}
+function alarmBanner(){
+ const a=S.alarmActive;
+ if(!a||modalAlarms)return '';
+ const critical=a.level==='critical',n=S.alarmQueue.filter(x=>!S.acknowledged.includes(x.id)).length;
+ return `<section class="alarm-banner ${critical?'critical':'warning'}" aria-label="当前报警"><span class="alarm-symbol original-symbol">${alarmArt[critical?'critical':'warning']}</span><div role="alert" aria-atomic="true"><small>${critical?'重要报警':'报警提示'} · ${n} 条待确认</small><strong>${esc(a.name)}</strong></div><button data-action="alarm-ack" aria-label="确认已读">已读</button></section>`;
+}
+function main(){const active=S.stage,hasFlow=['进血','清洗','清空'].includes(active);return `${header(true)}<div class="top-selectors">${topSelector('cup')}${topSelector('mode')}</div><section class="pos panel status-panel" style="${pos(20,113,146,100)}"><div class="eyebrow">运行状态</div><div class="status-name">${S.paused?'暂停中':active}</div><div class="status-sub"><i class="status-dot" style="${S.paused?'background:#cea252':''}"></i>${S.paused?'按继续取消暂停':active==='待机'?'等待操作':active==='停止'?'操作已停止':'运行中'}</div></section><section class="pos panel side-detail" style="${pos(20,234,146,244)}"><h3>本次运行</h3><dl><dt>当前模式</dt><dd>${D.modes[S.mode].name}模式</dd><dt>离心杯型号</dt><dd>${S.cup}<span class="unit">mL</span></dd><dt>处理杯数</dt><dd>— —</dd></dl><div class="side-note">${S.alarmQueue.length?`${S.alarmQueue.length} 条报警待处理`:S.paused?'运行已暂停':hasFlow?`${active}进行中`:'等待设备状态同步'}</div></section><section class="pos panel flow-panel ${S.paused?'paused':''}" style="${pos(186,101,602,405)}" aria-label="管路运行示意"><svg class="flow-lines" viewBox="0 0 956 484" aria-hidden="true"></svg>${[['进血量','feed','#e0b552',18],['清洗量','wash','#55af94',216],['清空量','empty','#dc7785',414]].map(([name,v,c,x])=>`<div class="pos metric" style="${pos(x,35,180,80)}"><div class="vessel" style="--liquid:${c}"></div><div><h3>${name}<span class="unit">mL</span></h3><span class="reading">${fieldValue(S.measurements[v])}</span></div></div>`).join('')}<div class="pump-reading"><h3>蠕动泵速 <span class="unit">mL/min</span></h3><strong>${fieldValue(S.measurements.speed)}</strong></div>${key(icon('up'),'speed-adjust:1',207,282,26,26,'arrow speed-key','aria-label="增加蠕动泵速"')}${key(icon('down'),'speed-adjust:-1',207,320,26,26,'arrow speed-key','aria-label="减少蠕动泵速"')}<div class="bowl ${['浓缩','回血','预充'].includes(active)?'bowl-active':''}"><img class="cup-photo" src="assets/centrifuge-cup.webp" alt="离心杯，透明杯体、锥形内芯与顶部双接口">${['浓缩','回血','预充'].includes(active)?'<svg class="cup-activity" width="195" height="195" viewBox="0 0 195 195" aria-hidden="true"><ellipse class="cup-cycle" cx="98" cy="137" rx="46" ry="18" fill="none" stroke="#d88796" stroke-width="2"/></svg>':''}</div><div class="pos metric waste-reading" style="left:620px;top:405px"><div class="vessel" style="--liquid:#688da7;width:43px;height:69px"></div><div><h3 style="font-size:17px">废液量 <span class="unit">mL</span></h3><span class="reading" style="font-size:29px">${fieldValue(S.measurements.waste)}</span></div></div><div class="flow-status"><i></i>${S.paused?'管路运行已暂停':hasFlow?`${active}进行中`:'管路就绪状态等待设备读取'}</div></section>${nav(true)}`;}
 function mode(){return `${header()}${heading('mode')}<div class="form-caption" style="left:196px;top:196px">选择运行模式</div>${D.modes.map((m,i)=>`${key(icon(m.icon),`mode:${i}`,[123,277,431,585][i],222,88,88,'mode-card '+(S.draftMode===i?'selected':''),`aria-label="${m.name}" aria-pressed="${S.draftMode===i}"`)}<div class="mode-caption" style="left:${[123,277,431,585][i]*1.6-25}px;top:437px">${m.name}<small>${m.en}</small></div>`).join('')}<div class="mode-note"><strong>${D.modes[S.draftMode].name}模式</strong><br>${D.modes[S.draftMode].description}</div>${key('确认','mode-confirm',692,400,98,33,'primary')}${key('取消','mode-cancel',692,453,98,33)}${nav()}`;}
 function parameters(alarm=false){let id=alarm?'alarmSettings':'parameters',list=alarm?D.alarmsSettings:D.parameters,vals=alarm?S.alarmSettings:S.parameters,selected=alarm?S.alarmIndex:S.parameterIndex;return `${header()}${heading(id)}<div class="form-caption">${alarm?'报警项目':'运行参数'} <span style="margin-left:18px;color:#a0afb6">${vals.filter(v=>v!==null).length} / ${list.length} 已载入</span></div>${list.map((p,i)=>key(`<span class="name">${p.name}</span><i class="tag"></i><span class="value">${fieldValue(vals[i])}</span><span class="unit">${p.unit}</span>`,`select:${i}`,26+(i%3)*161,160+Math.floor(i/3)*150,148,102,'parameter '+(selected===i?'selected':''),`aria-label="${p.name}" aria-pressed="${selected===i}"`)).join('')}<div class="adjust-info">当前选择 · ${list[selected].name}</div>${key(icon('up'),'adjust:1',550,144,218,96,'arrow','aria-label="增加"')}${key(icon('down'),'adjust:-1',550,254,218,96,'arrow','aria-label="减少"')}${key('确认','parameters-confirm',550,369,218,45,'primary')}${key('复位','parameters-reset',550,430,218,48)}<div class="form-caption" style="top:618px">${vals[selected]===null?'— — 表示等待设备读取参数':'使用右侧箭头调整所选项目'}</div>${nav()}`;}
 function patient(){const fields=[['患者病历号',52,172,200,544],['科室',796,172,880,344],['患者姓名',52,252,200,328],['性别',560,252,624,120],['年龄',796,252,880,120]];let html=`${header()}${heading('patient')}<section class="panel patient-form" aria-label="患者资料"></section>`;fields.forEach(([name,x,y,ix,iw],i)=>{html+=`<label for="field-${i}" class="form-label" style="left:${x}px;top:${y}px;width:${ix-x-16}px;height:44px">${name}</label><input class="input ${S.focusField===i?'active':''}" style="left:${ix}px;top:${y}px;width:${iw}px;height:44px" id="field-${i}" data-field="${i}" value="${esc(S.patient[i])}" autocomplete="off" maxlength="${i===4?3:40}" aria-label="${name}">`;});html+='<span class="field-hint" style="left:880px;top:223px">1 骨科 / 2 心外科 / 3 妇产科 / 4 其他</span><span class="field-hint" style="left:624px;top:303px">1 男 / 2 女</span>';[['1234567890⌫',88,348],['QWERTYUIOP',138,420],['ASDFGHJKL',188,492],['ZXCVBNM',238,564]].forEach(([str,x,y])=>{[...str].forEach((c,i)=>html+=key(c,`type:${c}`,(x+i*100)/1.6,y*.75,84/1.6,54*.75,'keyboard-key',`aria-label="${c==='⌫'?'退格':c}"`));});html+=key('清空','patient-clear',938/1.6,564*.75,84/1.6,54*.75,'keyboard-key chinese soft-danger')+key('确认','patient-confirm',1038/1.6,564*.75,134/1.6,54*.75,'keyboard-key chinese primary')+nav();return html;}
@@ -89,12 +108,39 @@ function dialog(){if(!S.modal)return '';let body='';const actions=(a)=>`<div cla
  else if(S.modal==='alarmEmpty')body=shell(S.alarmQueue.length?'报警记录':'暂无待确认报警',S.alarmQueue.length?`<p>${S.alarmQueue.map(a=>`${esc(a.name)} · ${S.acknowledged.includes(a.id)?'已读，等待设备解除':'待确认'}`).join('<br>')}</p>`:'<p>设备报警将在此处显示。</p>',[['返回','modal-close','primary']],'报警中心');
  return `<div class="overlay">${body}</div>`;
 }
-function render(){root.dataset.page=S.page;const pages={main,mode,parameters:()=>parameters(false),alarmSettings:()=>parameters(true),patient,trend,time:timePage,boot:()=>boot(false),recovery:()=>boot(true),selftest,debug,debugDetail,video,help1:help,help2:help,help3:help,help4:help};root.innerHTML=(pages[S.page]||main)()+dialog()+(S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:'');if(S.modal){root.querySelectorAll('button,input').forEach(el=>{if(!el.closest('.overlay'))el.setAttribute('tabindex','-1')});const el=root.querySelector('.dialog');if(el){el.setAttribute('tabindex','-1');el.focus({preventScroll:true});}}if(S.page==='video'){videoElement=document.getElementById('video-player');if(videoElement)videoElement.volume=S.volume/100;}resize();}
+function render(){root.dataset.page=S.page;const pages={main,mode,parameters:()=>parameters(false),alarmSettings:()=>parameters(true),patient,trend,time:timePage,boot:()=>boot(false),recovery:()=>boot(true),selftest,debug,debugDetail,video,help1:help,help2:help,help3:help,help4:help};root.innerHTML=(pages[S.page]||main)()+dialog()+alarmBanner()+(S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:'');if(S.modal){root.querySelectorAll('button,input').forEach(el=>{if(!el.closest('.overlay,.alarm-banner'))el.setAttribute('tabindex','-1')});const el=root.querySelector('.dialog');if(el){el.setAttribute('tabindex','-1');el.focus({preventScroll:true});}}if(S.page==='video'){videoElement=document.getElementById('video-player');if(videoElement)videoElement.volume=S.volume/100;}resize();}
 function toast(message){S.toast=message;clearTimeout(toastTimer);render();toastTimer=setTimeout(()=>{S.toast='';render()},2600);}
 function event(name,detail='界面演示操作'){let d=new Date();S.events.unshift({name,detail,time:d.toLocaleString('sv-SE').slice(0,16)});S.trendPage=0;}
-function go(page){S.page=page;S.modal=null;S.toast='';if(page==='mode')S.draftMode=S.mode;render();}
+function go(page){dropdown=null;S.page=page;S.modal=null;S.toast='';if(page==='mode')S.draftMode=S.mode;render();}
 function startSelf(){clearInterval(selfTimer);S.page='selftest';S.selfResult='';S.selfProgress=0;render();selfTimer=setInterval(()=>{S.selfProgress=Math.min(S.selfProgress+14,100);if(S.selfProgress===100){clearInterval(selfTimer);S.selfResult='pass';}render()},500);}
-function pushAlarm(id,origin){let a=D.alarms.find(a=>a.id===id);if(!a)return;let record={...a,...(origin?{origin}:{})};if(!S.alarmQueue.some(x=>x.id===id))S.alarmQueue.push(record);S.acknowledged=S.acknowledged.filter(x=>x!==id);S.alarmActive=record;S.modal='alarm';render();}
+function refreshAlarms(){
+ const unread=S.alarmQueue.filter(a=>!S.acknowledged.includes(a.id));
+ S.alarmActive=unread.find(a=>a.level==='critical')||unread[0]||null;
+ if(modalAlarms){
+  if(S.alarmActive) S.modal='alarm';
+  else if(S.modal==='alarm') S.modal=null;
+  render();
+ }else{
+  const before=root.querySelector('.alarm-banner'),html=alarmBanner();
+  if(before && html)before.outerHTML=html;
+  else if(before)before.remove();
+  else if(html)root.insertAdjacentHTML('beforeend',html);
+  const note=root.querySelector('.side-note');
+  if(note && S.alarmQueue.length)note.textContent=S.alarmQueue.length+' 条报警待处理';
+  else if(note && !S.alarmQueue.length)note.textContent=S.paused?'运行已暂停':['进血','清洗','清空'].includes(S.stage)?S.stage+'进行中':'等待设备状态同步';
+  if(S.modal==='alarmEmpty')render();
+ }
+}
+function pushAlarm(id,origin){
+ const definition=D.alarms.find(a=>a.id===id);
+ if(!definition)return;
+ const record={...definition,...(origin?{origin}:{})};
+ const existing=S.alarmQueue.find(a=>a.id===id);
+ if(existing)Object.assign(existing,record);
+ else S.alarmQueue.push(record);
+ S.acknowledged=S.acknowledged.filter(x=>x!==id);
+ refreshAlarms();
+}
 function changeParameter(dir){let alarm=S.page==='alarmSettings',values=alarm?S.alarmSettings:S.parameters,index=alarm?S.alarmIndex:S.parameterIndex,list=alarm?D.alarmsSettings:D.parameters;if(!alarm&&index===5){values[index]=dir>0?225:125;render();return;}/* No device ranges or increments were supplied. Do not fabricate them. */toast(`${list[index].name}：等待设备提供数值、范围与步长`);}
 function handle(action){const [a,v]=action.split(':');switch(a){
 case'go':go(v);break;
@@ -110,9 +156,15 @@ case'mode':S.draftMode=+v;render();break;
 case'mode-confirm':S.modal='mode';render();break;
 case'mode-cancel':S.draftMode=S.mode;go('main');break;
 case'mode-apply':S.mode=S.draftMode;S.modal=null;event('模式切换',D.modes[S.mode].name);go('main');break;
-case'cup':S.draftCup=S.cup;S.modal='cup';render();break;
+case'cup':case'mode-dropdown':{
+ const kind=a==='cup'?'cup':'mode';
+ dropdown=dropdown===kind?null:kind;
+ S.draftCup=S.cup;S.draftMode=S.mode;render();
+ root.querySelector(dropdown?'.option[aria-pressed="true"]':`[data-action="${a}"]`)?.focus();break;
+}
+case'dropdown-close':{const trigger=dropdown==='cup'?'cup':'mode-dropdown';dropdown=null;render();root.querySelector(`[data-action="${trigger}"]`)?.focus();break;}
 case'cup-select':S.draftCup=+v;render();break;
-case'cup-apply':S.cup=S.draftCup;S.parameters[5]=S.cup;S.modal=null;render();break;
+case'cup-apply':dropdown=null;S.cup=S.draftCup;S.parameters[5]=S.cup;S.modal=null;render();break;
 case'select':if(S.page==='alarmSettings')S.alarmIndex=+v;else S.parameterIndex=+v;render();break;
 case'adjust':changeParameter(+v);break;
 case'parameters-confirm':S.cup=S.parameters[5];toast('当前设置已保留在本次界面预览中');break;
@@ -135,8 +187,8 @@ case'debug-stage':toast(`${v}测试按键预览`);break;
 case'debug-adjust':toast('等待设备提供调试参数范围与步长');break;
 case'debug-item':S.debugSelection=(S.debugSelection+(+v)+6)%6;render();break;
 case'debug-confirm':toast('调试项目已选择，等待设备参数');break;
-case'alarm-open':{let unread=S.alarmQueue.find(x=>!S.acknowledged.includes(x.id));if(unread){S.alarmActive=unread;S.modal='alarm'}else S.modal='alarmEmpty';render();break;}
-case'alarm-ack':{if(S.alarmActive){S.acknowledged.push(S.alarmActive.id);event('报警已读',S.alarmActive.name);}let next=S.alarmQueue.find(x=>!S.acknowledged.includes(x.id));if(next){S.alarmActive=next}else{S.modal=null;S.alarmActive=null;}render();break;}
+case'alarm-open':S.modal=modalAlarms&&S.alarmActive?'alarm':'alarmEmpty';render();break;
+case'alarm-ack':if(S.alarmActive){S.acknowledged.push(S.alarmActive.id);event('报警已读',S.alarmActive.name);}refreshAlarms();break;
 case'modal-close':if(S.modal!=='alarm'){S.modal=null;render();}break;
 case'print':S.modal='print';render();break;
 case'print-apply':window.print();break;
@@ -146,10 +198,18 @@ case'video-stop':if(videoElement){videoElement.pause();videoElement.currentTime=
 case'video-prev':case'video-next':toast('暂无其他视频');break;
 case'video-full':if(document.fullscreenElement)document.exitFullscreen();else root.requestFullscreen?.().catch(()=>toast('请使用浏览器全屏功能'));break;
 }}
-root.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b&&!b.disabled)handle(b.dataset.action)});
+root.addEventListener('click',e=>{
+ const b=e.target.closest('[data-action]'),wasOpen=dropdown;
+ if(dropdown&&!e.target.closest('.top-selectors')){dropdown=null;if(!b)render();}
+ if(!b||b.disabled)return;
+ handle(b.dataset.action);
+ if(wasOpen&&b.matches('.option'))root.querySelector('.option[aria-pressed="true"]')?.focus();
+ if(wasOpen&&['cup-apply','mode-apply'].includes(b.dataset.action))root.querySelector(`[data-action="${wasOpen==='cup'?'cup':'mode-dropdown'}"]`)?.focus();
+ if(wasOpen&&!dropdown&&root.querySelector('.option-list'))render();
+});
 root.addEventListener('focusin',e=>{if(e.target.matches('[data-field]')){S.focusField=+e.target.dataset.field;root.querySelectorAll('[data-field]').forEach(x=>x.classList.toggle('active',x===e.target));}});
 root.addEventListener('input',e=>{if(e.target.matches('[data-field]'))S.patient[+e.target.dataset.field]=e.target.value;});
-document.addEventListener('keydown',e=>{if(S.modal&&e.key==='Tab'){let els=[...root.querySelectorAll('.dialog button:not([disabled])')];let first=els[0],last=els.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.key==='Escape'&&S.modal!=='alarm'){S.modal=null;render();}});
+document.addEventListener('keydown',e=>{if(dropdown&&e.key==='Escape'){e.preventDefault();handle('dropdown-close');return;}if(S.modal&&e.key==='Tab'){let els=[...root.querySelectorAll('.dialog button:not([disabled]),.alarm-banner button')];let first=els[0],last=els.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.key==='Escape'&&S.modal!=='alarm'){S.modal=null;render();}});
 
 // Routes use the rendered component anchors, independent of viewport scaling.
 function syncFlowGeometry(){
@@ -157,17 +217,17 @@ function syncFlowGeometry(){
  const rect=panel.getBoundingClientRect(),scale=rect.width/panel.offsetWidth;
  const bounds=el=>{const r=el.getBoundingClientRect();return{x:(r.x-rect.x)/scale-panel.clientLeft,y:(r.y-rect.y)/scale-panel.clientTop,w:r.width/scale,h:r.height/scale}};
  const metrics=[...panel.querySelectorAll('.metric:not(.waste-reading) .vessel')].map(bounds),b=bounds(panel.querySelector('.bowl')),w=bounds(panel.querySelector('.waste-reading .vessel'));
- const cx=b.x+b.w*98/195,cy=b.y+b.h*8/195,joinY=216,round=n=>Math.round(n*100)/100;
- const route=m=>{const x=m.x+m.w/2,y=m.y+m.h,dir=x<cx?1:-1;return `M${round(x)} ${round(y)} V${joinY-18} Q${round(x)} ${joinY} ${round(x+18*dir)} ${joinY} H${round(cx-18*dir)} Q${round(cx)} ${joinY} ${round(cx)} ${joinY+18} V${round(cy)}`};
+ const inletX=b.x+b.w*.35,cy=b.y+b.h*.058,cx=inletX-20,joinY=216,round=n=>Math.round(n*100)/100;
+ const route=m=>{const x=m.x+m.w/2,y=m.y+m.h,dir=x<cx?1:-1;return `M${round(x)} ${round(y)} V${joinY-18} Q${round(x)} ${joinY} ${round(x+18*dir)} ${joinY} H${round(cx-18*dir)} Q${round(cx)} ${joinY} ${round(cx)} ${joinY+18} V${round(cy)} H${round(inletX)}`};
  const idx=['进血','清洗','清空'].indexOf(S.stage),colors=['#d5ad50','#45a48e','#d56a7d'];const paths=[];
- if(idx>=0){paths.push({d:route(metrics[idx]),color:colors[idx],reverse:idx===2});if(idx===2){const x=w.x+w.w/2,sy=b.y+b.h*123/195,sx=b.x+b.w*153/195;paths.push({d:`M${round(sx)} ${round(w.y+w.h/2)} H${round(w.x)}`,color:'#688da7'});}}
+ if(idx>=0){paths.push({d:route(metrics[idx]),color:colors[idx],reverse:idx===2});if(idx===2){const sx=b.x+b.w*.65,wy=w.y+w.h/2,bend=w.x-28;paths.push({d:`M${round(sx)} ${round(cy)} H${round(bend-12)} Q${round(bend)} ${round(cy)} ${round(bend)} ${round(cy+12)} V${round(wy-12)} Q${round(bend)} ${round(wy)} ${round(bend+12)} ${round(wy)} H${round(w.x)}`,color:'#688da7'});}}
  svg.setAttribute('viewBox',`0 0 ${panel.clientWidth} ${panel.clientHeight}`);svg.innerHTML=paths.map(p=>`<path class="pipe-base" d="${p.d}"/><path class="pipe-flow ${p.reverse?'reverse':''}" style="--flow:${p.color}" d="${p.d}"/>`).join('');
 }
 
 function resize(){root.style.transform=`scale(${Math.min(innerWidth/1280,innerHeight/800)})`;syncFlowGeometry();}
 window.addEventListener('resize',resize);
-function loadPreview(){clearInterval(selfTimer);let q=new URLSearchParams(location.search),id=q.get('screen')||'main',p=D.pages.find(x=>x.id===id)||D.pages[0];S.page=p.page||p.id;S.stage=p.stage||'待机';S.autoReady=!!p.autoReady;S.paused=!!p.paused;S.draftMode=p.mode??0;S.modal=p.modal||null;S.selfResult=p.result||'';S.selfProgress=p.result?100:0;if(q.get('freeze')==='1')root.classList.add('no-motion');if(q.has('alarm')){let a=D.alarms.find(x=>x.id===q.get('alarm'));if(a){S.alarmActive=a;S.alarmQueue=[a];S.modal='alarm';}}if(q.has('message')){S.noticeIndex=Math.max(0,Math.min(D.messages.length-1,Number(q.get('message'))||0));S.modal='notice';}render();}
+function loadPreview(){clearInterval(selfTimer);let q=new URLSearchParams(location.search),id=q.get('screen')||'main',p=D.pages.find(x=>x.id===id)||D.pages[0];S.page=p.page||p.id;S.stage=p.stage||'待机';S.autoReady=!!p.autoReady;S.paused=!!p.paused;S.draftMode=p.mode??0;dropdown=p.dropdown||null;S.modal=p.modal||null;S.selfResult=p.result||'';S.selfProgress=p.result?100:0;if(q.get('freeze')==='1')root.classList.add('no-motion');if(q.has('alarm')){let a=D.alarms.find(x=>x.id===q.get('alarm'));if(a){S.alarmActive=a;S.alarmQueue=[a];if(modalAlarms)S.modal='alarm';}}if(q.has('message')){S.noticeIndex=Math.max(0,Math.min(D.messages.length-1,Number(q.get('message'))||0));S.modal='notice';}render();}
 /* Device integration boundary. No transport, hardware commands or medical defaults. */
-window.BloodRecoveryUI={getState:()=>JSON.parse(JSON.stringify(S)),showAlarm:pushAlarm,clearAlarm:(id)=>{S.alarmQueue=S.alarmQueue.filter(a=>a.id!==id);S.acknowledged=S.acknowledged.filter(x=>x!==id);if(S.alarmActive?.id===id){S.alarmActive=null;S.modal=null;}render()},setMeasurements:(values)=>{for(let key of Object.keys(S.measurements))if(key in values)S.measurements[key]=values[key];render()},setParameters:(values)=>{values.forEach((v,i)=>{if(i<6)S.parameters[i]=v});render()},setAlarmSettings:(values)=>{values.forEach((v,i)=>{if(i<5)S.alarmSettings[i]=v});render()},showNotice:(index)=>{S.noticeIndex=index;S.modal='notice';render()},navigate:go};
+window.BloodRecoveryUI={getState:()=>JSON.parse(JSON.stringify(S)),showAlarm:pushAlarm,clearAlarm:(id)=>{S.alarmQueue=S.alarmQueue.filter(a=>a.id!==id);S.acknowledged=S.acknowledged.filter(x=>x!==id);refreshAlarms()},setMeasurements:(values)=>{for(let key of Object.keys(S.measurements))if(key in values)S.measurements[key]=values[key];render()},setParameters:(values)=>{values.forEach((v,i)=>{if(i<6)S.parameters[i]=v});render()},setAlarmSettings:(values)=>{values.forEach((v,i)=>{if(i<5)S.alarmSettings[i]=v});render()},showNotice:(index)=>{S.noticeIndex=index;S.modal='notice';render()},navigate:go};
 loadPreview();
 })();

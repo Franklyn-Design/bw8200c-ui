@@ -87,3 +87,43 @@
 #device[data-page="trend"] .page-heading,
 #device[data-page="time"] .page-heading{top:87px;height:40px;right:376px}
 #device[data-page="time"] .page-heading .hint{left:auto;right:0;top:12px}
+
+/* 同一块蓝灰色控制面板承托浅色键帽，上下栏共用材质。 */
+#device{--rail:linear-gradient(180deg,#a4bbc6 0%,#91acba 48%,#859fad 100%)}
+.topbar,.nav,.service-header,.boot-footer{background:var(--rail);border-color:#718d9c}
+.page-heading .en,.page-heading .hint{color:#324f60}
+.boot-footer~.pos:not(button){color:#283f4a!important}
+.top-selectors{position:absolute;left:98px;top:40px;display:flex;gap:12px;z-index:10}
+.top-selector{position:relative}
+.selector-trigger{height:56px;width:146px;padding:0 14px;justify-content:flex-start;font-size:19px;gap:9px}
+.selector-trigger .icon{width:21px;height:21px}
+.selector-chevron{margin-left:auto;flex:none}
+[aria-expanded="true"] .selector-chevron{transform:rotate(180deg)}
+.option-list{position:absolute;left:0;top:68px;width:254px;border:1px solid #a4b8c1;background:#f8fbfc;border-radius:14px;box-shadow:0 12px 32px #183b4b45;padding:10px}
+.option-list h3{margin:4px 8px 9px;font-size:14px;color:#496776}
+.option,.option-actions button,.alarm-banner button{font:inherit;border:0;cursor:pointer}
+.option{display:flex;justify-content:space-between;align-items:center;width:100%;height:44px;padding:0 12px;margin:2px 0;border-radius:7px;color:#294b5a;background:transparent;text-align:left}
+.option[aria-pressed="true"]{background:#dcecf0;color:#135a70;font-weight:650}
+.option:hover{background:#e8f0f3}.option .icon{width:18px;height:18px}
+.option-list p{font-size:14px;line-height:1.55;color:#476372;margin:10px 8px}
+.option-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #d3dfe4}
+.option-actions button{flex:1;height:42px;border-radius:8px;background:#e2ebef;color:#244555}
+.option-actions button:last-child{background:#235e71;color:white}
+.alarm-banner{position:absolute;z-index:30;left:422px;top:30px;width:486px;height:74px;display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid #d8b07a;border-left:5px solid #b9630c;border-radius:12px;background:#fff3da;color:#6c3906;box-shadow:0 3px 7px #23445620}
+.alarm-banner.critical{border-color:#d8a5aa;border-left-color:#bc3243;background:#fff0f1;color:#872334}
+.alarm-banner .alarm-symbol{width:32px;height:32px;flex:none}
+.alarm-banner .alarm-symbol .icon{width:32px;height:32px;stroke:none}
+.alarm-banner [role="alert"]{flex:1;min-width:0}
+.alarm-banner small{display:block;font-size:12px;line-height:18px;font-weight:600}
+.alarm-banner strong{display:block;font-size:19px;line-height:24px}
+.alarm-banner button{height:44px;min-width:58px;border:1px solid currentColor;border-radius:9px;background:#fff9;color:inherit;font-size:16px;font-weight:650}
+.top-action.pause-key{--cap:#ffda81;--base:#efbd55;--rim:#a27428;--down:#daa137;color:#48320c}
+.top-action.resume-key{--cap:#27816a;--base:#19644f;--rim:#0d4a3b;--down:#124d3e;color:#fff}
+.top-action.danger,.dialog-actions [data-action="stop-apply"]{--cap:#ce4958;--base:#ac303f;--rim:#77242f;--down:#842431;color:#fff}
+.key.top-action,.dialog-actions [data-action="stop-apply"]{background:linear-gradient(var(--cap),var(--base));border-color:var(--rim);box-shadow:0 5px 0 var(--rim),0 8px 12px #20364330,inset 0 1px 0 #fff7}
+.key.top-action:active,.dialog-actions [data-action="stop-apply"]:active{background:var(--down);transform:translateY(4px);box-shadow:0 1px 0 var(--rim),inset 0 2px 5px #182e3640}
+.cup-photo{display:block;width:100%;height:100%;object-fit:contain}
+.vessel{border:2px solid #a4b8c1;border-top:5px double #869da9;border-radius:10px 10px 19px 19px;background:linear-gradient(90deg,#b8cbd461,#f6fbfd 13%,#e0e9ed 22%,#ffffff89 46%,#c3d2da 91%,#edf4f8);box-shadow:inset 2px 0 2px #fffc,inset -3px 0 4px #5878882e,0 4px 7px #1c384512}
+.vessel:after{background:linear-gradient(90deg,#ffffff73,transparent 20%,#ffffff25 65%,#25445433),var(--liquid);border-top:2px solid #ffffff86;box-shadow:inset 0 -3px 3px #45687922;border-radius:20% 17% 10px 10px / 6% 5% 12px 12px}
+@media print{.alarm-banner,.top-selectors{display:none}}
+.selector-trigger{white-space:nowrap;padding:0 10px;gap:6px}

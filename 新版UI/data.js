@@ -56,7 +56,8 @@ window.UI_DATA={
  {id:'modeConfirm',title:'模式切换确认',group:'弹窗与状态',old:'33-模式选择提示—正式.png',page:'mode',modal:'mode'},
  {id:'modeEmergency',title:'应急模式确认',group:'弹窗与状态',old:'33-模式选择提示—正式.png',page:'mode',modal:'mode',mode:2},
  {id:'modeNoWash',title:'不清洗模式确认',group:'弹窗与状态',old:'33-模式选择提示—正式.png',page:'mode',modal:'mode',mode:3},
- {id:'cup',title:'离心杯规格更换',group:'弹窗与状态',old:'31-按键切图.png',page:'main',modal:'cup'},
+ {id:'modeDropdown',title:'运行模式下拉选择',group:'弹窗与状态',old:'3-模式选择.png',page:'main',dropdown:'mode'},
+ {id:'cup',title:'离心杯规格更换',group:'弹窗与状态',old:'31-按键切图.png',page:'main',dropdown:'cup'},
  {id:'stop',title:'停止操作确认',group:'弹窗与状态',old:'12-主界面按下状态.png',page:'main',modal:'stop'},
  {id:'print',title:'打印预览',group:'弹窗与状态',old:'35-白色背景.png',page:'main',modal:'print'},
  {id:'notice',title:'运行提示',group:'弹窗与状态',old:'34-提示一色背景.png',page:'main',modal:'notice'}
